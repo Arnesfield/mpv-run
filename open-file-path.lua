@@ -18,7 +18,9 @@ mp.options.read_options(options, "open-file-path")
 
 local computed = {
   -- Open the parent directory of the current file.
-  parent_directory = '@computed/parent-directory'
+  parent_directory = '@computed/parent-directory',
+  -- Open the current file (e.g., for YouTube videos).
+  self = '@computed/self'
 }
 
 local prefix = {
@@ -26,8 +28,8 @@ local prefix = {
   computed = '@computed/'
 }
 
-local function string_starts_with(string, start)
-  return string.sub(string, 1, string.len(start)) == start
+local function string_starts_with(value, start)
+  return value.sub(value, 1, value.len(start)) == start
 end
 
 local function get_split_pattern(delimiter)
@@ -63,12 +65,15 @@ local function get_path(value)
     path = mp.get_property(property)
   elseif string_starts_with(value, prefix.computed) then
     -- check for computed properties
-    if value == computed.parent_directory then
-      local file_path = mp.get_property('path')
-      if file_path ~= nil then
-        -- assign the directory to path
-        path = mp.utils.split_path(file_path)
-      end
+    local file_path = mp.get_property('path')
+
+    if file_path == nil then
+      -- do nothing if no file path
+    elseif value == computed.self then
+      path = file_path
+    elseif value == computed.parent_directory then
+      -- assign the directory to path
+      path = mp.utils.split_path(file_path)
     end
   else
     path = value
