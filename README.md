@@ -1,65 +1,173 @@
-# mpv-open-file-path
+# mpv-run
 
-Open file path in [mpv](https://mpv.io/).
+Run commands in [mpv](https://mpv.io/) via `script-message`.
 
 ## Install
 
 Download the following files to their appropriate directories under your mpv config (e.g., `~/.config/mpv`):
 
-[`open-file-path.lua`](open-file-path.lua) - Save to `scripts` directory.
+[`run.lua`](run.lua) - Save to `scripts` directory.
 
 ```sh
-wget github.com/Arnesfield/mpv-open-file-path/raw/main/open-file-path.lua
+wget github.com/Arnesfield/mpv-run/raw/main/run.lua
 ```
 
-[`open-file-path.conf`](open-file-path.conf) - Save to `script-opts` directory. Includes defaults.
+[`run.conf`](run.conf) - Save to `script-opts` directory. Includes defaults.
 
 ```sh
-wget github.com/Arnesfield/mpv-open-file-path/raw/main/open-file-path.conf
+wget github.com/Arnesfield/mpv-run/raw/main/run.conf
 ```
 
 ## Usage
 
-Use `script-message open-file-path <path>` in your `input.conf`. Example:
+By default, the command is `xdg-open` which can be configured through the [`command`](#command) option.
+
+Use `script-message run <arg>` to run the command with the specified argument.
+
+Example `input.conf`:
 
 ```conf
-ctrl+/ script-message open-file-path ~/Videos
-/ script-message open-file-path @computed/parent-directory
-ctrl+. script-message open-file-path @property/path
-ctrl+S script-message open-file-path @property/screenshot-directory
+# raw and with modifiers
+ctrl+?  script-message run '/absolute/path/to my directory'
+ctrl+/  script-message run @raw.path/~/Videos
+
+# computed (with modifiers)
+/       script-message run @computed.path/parent-directory
+
+# property (with modifiers)
+ctrl+.  script-message run @property.path/path
+ctrl+S  script-message run @property.path/screenshot-directory
+
+# run command (ignores default command)
+ctrl+>  script-message run-cmd gio open :@property.path/screenshot-directory
 ```
 
-### Properties as Paths
+### Script Messages
 
-Paths prefixed with `@property/` (e.g., `@property/<property-key>`) can be used to treat the value from `mp.get_property('<property-key>')` as a file path to open.
+Below are the list of registered script messages once this script is applied.
 
-### Computed Paths
+#### run
 
-Paths prefixed with `@computed/` are hardcoded:
+Runs the configured [`command`](#command) with the provided argument.
 
-- `@computed/parent-directory` - Open the parent directory of the current file.
+```sh
+script-message run @property.path/screenshot-directory
+```
+
+#### run-cmd
+
+Runs command using the provided arguments (the configured [`command`](#command) is ignored).
+
+```sh
+script-message run-cmd gio open :@property.path/screenshot-directory /tmp
+```
+
+Note that only arguments that start with a colon (`:`) will be substituted. Otherwise, they will be treated as raw arguments.
+
+#### run-parse
+
+Parses arguments into their equivalent values when substituted. Raw values are returned as is.
+
+```sh
+script-message run-parse @property/screenshot-directory
+```
+
+### Substitutions
+
+The following patterns are used for substitution.
+
+- `@key/{key}` - Use the associated value of the provided `{key}` from the [`vars`](#vars) option.
+- `@raw/{value}` - Use the `{value}` as is. Usually used with [modifiers](#modifiers).
+- `@property/{key}` - Get the property via `mp.get_property('{key}')`.
+- `@computed/{key}` - Use the computed value. See the list of [computed properties](#computed-properties).
+
+### Modifiers
+
+Modifiers can be added to transform the value.
+
+Format:
+
+```text
+@key[.modifier[.modifiers...]]/{value}
+```
+
+List of available modifiers:
+
+- `path` - Transforms the value with: `mp.command_native({ 'expand-path', value })`
+
+Example `input.conf`:
+
+```conf
+ctrl+/ script-message run @raw.path/~/Videos
+```
+
+> [!NOTE]
+>
+> Feel free to suggest/implement new modifiers!
+
+### Computed Properties
+
+List of available computed properties:
+
+- `parent-directory` - The parent directory of the current file.
+
+Example `input.conf`:
+
+```conf
+/ script-message run @computed.path/parent-directory
+```
+
+> [!NOTE]
+>
+> Feel free to suggest/implement new computed properties!
+
+### Command Mode
+
+With command mode, the [`command`](#command) option is ignored and you can specify what command to run and its arguments.
+
+Example `input.conf`:
+
+```conf
+/ script-message run @cmd gio open :@property.path/screenshot-directory
+```
+
+### Variables
+
+By configuring the [`vars`](#vars) key-value pairs, you can use the keys as placeholder values.
+
+Example:
+
+```conf
+# mpv.conf
+script-opts-append=run-vars=command=xdg-open,videos-dir=~/Videos
+
+# input.conf
+/ script-message run @cmd :command :@key.path/videos-dir
+```
 
 ## Config
 
-List of configuration options ([`open-file-path.lua`](open-file-path.conf)).
+List of configuration options ([`run.lua`](run.conf)).
 
-Options can also be configured in `mpv.conf` via `script-opts` using the `open-file-path` prefix.
+Options can also be configured in `mpv.conf` via `script-opts` using the `run` prefix.
 
 ### command
 
 Default: `xdg-open`
 
-The open command to run.
+The command to run by default for non-command mode calls. Required for non-command mode calls.
 
-### args
+### vars
 
-Additional args for [`command`](#command) (comma-separated by default).
+Default: `command=xdg-open`
 
-### args_delimiter
+List of key-value pair variables separated by a comma by default.
+
+### vars_delimiter
 
 Default: `,`
 
-The delimiter for [`args`](#args).
+The delimiter for [`vars`](#vars).
 
 ## License
 
