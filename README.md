@@ -39,7 +39,7 @@ ctrl+.  script-message run @property.path/path
 ctrl+S  script-message run @property.path/screenshot-directory
 
 # run command (ignores default command)
-ctrl+>  script-message run-cmd gio open :@property.path/screenshot-directory
+ctrl+>  script-message run-cmd gio open @property.path/screenshot-directory
 ```
 
 ### Script Messages
@@ -59,10 +59,8 @@ script-message run @property.path/screenshot-directory
 Runs command using the provided arguments (the configured [`command`](#command) is ignored).
 
 ```sh
-script-message run-cmd gio open :@property.path/screenshot-directory /tmp
+script-message run-cmd gio open @property.path/screenshot-directory /tmp
 ```
-
-Note that only arguments that start with a colon (`:`) will be substituted. Otherwise, they will be treated as raw arguments.
 
 #### run-parse
 
@@ -132,7 +130,7 @@ Example:
 script-opts-append=run-vars=command=xdg-open,videos-dir=~/Videos
 
 # input.conf
-/ script-message run-cmd :command :@var.path/videos-dir
+/ script-message run-cmd @var/command @var.path/videos-dir
 ```
 
 ## Config

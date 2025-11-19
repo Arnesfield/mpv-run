@@ -75,37 +75,22 @@ end
 ---@param modifiers table
 ---@return string
 local function apply_modifiers(str, modifiers)
-  local result = str
-
   for _, value in ipairs(modifiers) do
     -- include other modifiers here
     if value == 'path' then
-      result = mp.command_native({ 'expand-path', result })
+      str = mp.command_native({ 'expand-path', str })
     else
       mp.msg.warn(string.format("Unrecognized modifier: '%s'", value))
     end
   end
 
-  return result;
+  return str;
 end
 
 local var_table = build_kv_table(options.vars, options.vars_delimiter)
 
 ---@param arg string
----@param command_mode? boolean
-local function parse_arg(arg, command_mode)
-  if command_mode then
-    local match = arg:match('^:(.*)')
-    if match == nil then
-      return arg
-    end
-
-    -- remove colon
-    arg = match
-  end
-
-  local use_raw = false
-
+local function parse_arg(arg)
   ---@type string|nil
   local result
   ---@type string|nil, string|nil
@@ -116,22 +101,24 @@ local function parse_arg(arg, command_mode)
     local modifiers = {}
 
     -- split by dot to get modifiers
-    for part in string.gmatch(key, '([^.]+)') do
-      -- first match should be the value
+    for modifier in string.gmatch(key, '([^.]+)') do
+      -- first match is the main key and not a modifier
       if result == nil then
-        local resolved = resolve_kv_pair(part, value, var_table)
+        local resolved = resolve_kv_pair(modifier, value, var_table)
 
         if resolved.value ~= nil then
           result = resolved.value
         else
           -- if not a valid key, then use the raw value as is
-          use_raw = not resolved.valid_key
+          if not resolved.valid_key then
+            result = arg
+          end
 
           -- stop loop if no value since we don't need to apply the modifiers
           break
         end
       else
-        table.insert(modifiers, part)
+        table.insert(modifiers, modifier)
       end
     end
 
@@ -139,19 +126,8 @@ local function parse_arg(arg, command_mode)
     if result ~= nil then
       result = apply_modifiers(result, modifiers)
     end
-  elseif command_mode then
-    result = resolve_kv_pair('var', arg, var_table).value
   else
-    use_raw = true
-  end
-
-  if use_raw then
-    -- in command mode, placeholders with the colon prefix should have a value
-    if command_mode then
-      result = nil
-    else
-      result = arg
-    end
+    result = arg
   end
 
   return result
@@ -204,7 +180,7 @@ local function run_cmd(...)
   local cmd_args = {}
 
   for i, arg in ipairs({ ... }) do
-    local parsed = parse_arg(arg, true)
+    local parsed = parse_arg(arg)
 
     -- return early
     if parsed == nil then
@@ -224,11 +200,10 @@ end
 
 ---@vararg string
 local function run_parse(...)
-  local args = { ... }
   ---@type string[]
   local result = {}
 
-  for _, value in ipairs(args) do
+  for _, value in ipairs({ ... }) do
     local parsed = parse_arg(value)
     parsed = parsed ~= nil and parsed or 'nil'
     table.insert(result, parsed)
