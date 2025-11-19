@@ -134,7 +134,7 @@ local function parse_arg(arg)
 end
 
 ---@param args string[]
-local function run_async(args)
+local function run_command_async(args)
   mp.msg.info('Running:', table.concat(args, ' '))
 
   mp.command_native_async({
@@ -171,7 +171,7 @@ local function run(arg)
     return
   end
 
-  run_async({ options.command, parsed })
+  run_command_async({ options.command, parsed })
 end
 
 ---@vararg string
@@ -192,7 +192,7 @@ local function run_cmd(...)
   end
 
   if #cmd_args > 0 then
-    run_async(cmd_args)
+    run_command_async(cmd_args)
   else
     mp.msg.warn('No arguments to run.')
   end
