@@ -193,7 +193,7 @@ local function run(arg)
 
   -- return early
   if parsed == nil then
-    mp.msg.error(string.format("Unable to parse: '%s'", arg))
+    mp.msg.error(string.format("Argument '%s' was parsed as 'nil'.", arg))
     return
   end
 
@@ -210,7 +210,7 @@ local function run_cmd(...)
 
     -- return early
     if parsed == nil then
-      mp.msg.error(string.format("Unable to parse args[%d]: '%s'", i, arg))
+      mp.msg.error(string.format("Argument '%s' at index %d was parsed as 'nil'.", arg, i))
       return
     end
 
